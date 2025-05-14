@@ -1,9 +1,11 @@
 from datetime import datetime
 import pytz
 import yfinance as yf
+import streamlit as st
+import pandas as pd
 
 def get_current_time(timezone: str = 'Asia/Seoul'):
-    tz = pytz.timezone(timezone) # 타임존 설정
+    tz = pytz.timezone(timezone)
     now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
     now_timezone = f'{now} {timezone}'
     print(now_timezone)
@@ -13,23 +15,42 @@ def get_yf_stock_info(ticker: str):
     stock = yf.Ticker(ticker)
     info = stock.info
     print(info)
+    
+    # Streamlit 표 형태 출력
+    st.subheader(f"📊 {ticker.upper()} 종목 정보")
+    info_df = pd.DataFrame.from_dict(info, orient='index', columns=["Value"])
+    st.dataframe(info_df)
+
     return str(info)
 
 def get_yf_stock_history(ticker: str, period: str):
     stock = yf.Ticker(ticker)
     history = stock.history(period=period)
-    history_md = history.to_markdown() # 데이터프레임을 마크다운 형식으로 변환
+
+    # Streamlit 표로 출력
+    st.subheader(f"📈 {ticker.upper()}의 최근 {period}간 주가 히스토리")
+    st.dataframe(history)
+
+    history_md = history.to_markdown()
     print(history_md)
     return history_md
 
 def get_yf_stock_recommendations(ticker: str):
     stock = yf.Ticker(ticker)
     recommendations = stock.recommendations
-    recommendations_md = recommendations.to_markdown() # 데이터프레임을 마크다운 형식으로 변환
+
+    if recommendations is None or recommendations.empty:
+        st.warning(f"{ticker.upper()}에 대한 추천 정보가 없습니다.")
+        return "추천 정보가 없습니다."
+
+    st.subheader(f"🧠 {ticker.upper()} 종목에 대한 애널리스트 추천")
+    st.dataframe(recommendations)
+
+    recommendations_md = recommendations.to_markdown()
     print(recommendations_md)
     return recommendations_md
 
-
+# 🔧 Function tool 등록
 tools = [
     {
         "type": "function",
@@ -45,7 +66,7 @@ tools = [
                     },
                 },
                 "required": ['timezone'],
-            },        
+            },
         }
     },
     {
@@ -62,7 +83,7 @@ tools = [
                     },
                 },
                 "required": ['ticker'],
-            },        
+            },
         }
     },
     {
@@ -83,7 +104,7 @@ tools = [
                     },
                 },
                 "required": ['ticker', 'period'],
-            },        
+            },
         }
     },
     {
@@ -100,17 +121,13 @@ tools = [
                     },
                 },
                 "required": ['ticker'],
-            },        
+            },
         }
     },
 ]
 
-
+# 🧪 테스트 용도
 if __name__ == '__main__':
-    # get_current_time('America/New_York')
-    # info = get_yf_stock_info('AAPL')  
-
     get_yf_stock_history('AAPL', '5d')
     print('----')
     get_yf_stock_recommendations('AAPL')
-  
